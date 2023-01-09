@@ -5,8 +5,8 @@ pub fn day12() {
     let start = map.iter().position(|&x| x == b'S').unwrap();
     let end = map.iter().position(|&x| x == b'E').unwrap();
 
-    let result1 = spf(&map, start, b'E', |m, ix| neighborhood(m, ix, |s, c| s <= c + 1));
-    let result2 = spf(&map, end, b'a', |m, ix| neighborhood(m, ix, |s, c| s >= c - 1));
+    let result1 = spf(&map, start, b'E', |s, c| s <= c + 1);
+    let result2 = spf(&map, end, b'a', |s, c| s >= c - 1);
 
     println!("DAY 12\nSolution 1: {result1}\nSolution 2: {result2}");
 }
@@ -15,11 +15,11 @@ fn spf<const L: usize, F>(
     map: &[u8; L],
     start_position: usize,
     end: u8,
-    neighborhood_fn: F,
+    is_valid_step: F
 ) -> usize
 where
-    F: Fn(&[u8; L], usize) -> Vec<usize>,
-{
+F: Fn(u8, u8) -> bool
+    {
     match (1..).try_fold(
         (
             HashSet::from([start_position]),
@@ -35,7 +35,7 @@ where
                 Ok((
                     frontier
                         .iter()
-                        .flat_map(|&ix| neighborhood_fn(map, ix))
+                        .flat_map(|&ix| neighborhood(map, ix, &is_valid_step))
                         .filter(|v| !visited.contains(v))
                         .collect(),
                     visited,
