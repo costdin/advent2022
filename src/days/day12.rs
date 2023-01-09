@@ -20,23 +20,33 @@ fn spf<const L: usize, F>(
 where
     F: Fn(&[u8; L], usize) -> Vec<usize>,
 {
-    let mut visited = HashSet::from([start_position]);
-    let mut frontier = HashSet::from([start_position]);
-    for i in 1.. {
-        frontier = frontier
-            .iter()
-            .flat_map(|&ix| neighborhood_fn(map, ix))
-            .filter(|v| !visited.contains(v))
-            .collect();
+    match (1..).try_fold(
+        (
+            HashSet::from([start_position]),
+            HashSet::from([start_position]),
+            1,
+        ),
+        |(frontier, mut visited, _), ix| {
+            if frontier.iter().any(|&ix| map[ix] == end) {
+                Err((frontier, visited, ix - 1))
+            } else {
+                visited.extend(frontier.iter());
 
-        if frontier.iter().any(|&ix| map[ix] == end) {
-            return i;
-        }
-
-        visited.extend(frontier.iter());
+                Ok((
+                    frontier
+                        .iter()
+                        .flat_map(|&ix| neighborhood_fn(map, ix))
+                        .filter(|v| !visited.contains(v))
+                        .collect(),
+                    visited,
+                    ix,
+                ))
+            }
+        },
+    ) {
+        Ok(_) => unreachable!(),
+        Err((_, _, result)) => result,
     }
-
-    unreachable!();
 }
 
 fn reverse_neighborhood<const L: usize>(map: &[u8; L], ix: usize) -> Vec<usize> {
