@@ -27,13 +27,24 @@ pub fn day15() {
         .fold(0, |acc, range| acc + range.end() - range.start() + 1)
         - beacons.len() as i64;
 
-    let result2 = (1..)
+
+        
+    let result2 = (0..)
         .map(|row| (row, get_ranges(&input, row)))
         .filter(|(_, (range, _))| range.len() > 1 || range[0].start() > &0 || range[0].end() < &MAX)
-        .map(|(row, (range, _))| if  range.len() > 1 { (row, range[0].end() + 1) } else if range[0].start() > &0 { (row, 0) } else { (row, MAX) } )
+        .map(|(row, (range, _))| {
+            if range.len() > 1 {
+                (row, range[0].end() + 1)
+            } else if range[0].start() > &0 {
+                (row, 0)
+            } else {
+                (row, MAX)
+            }
+        })
         .map(|(row, x)| row + x * 4000000)
         .take(1)
-        .next().unwrap();
+        .next()
+        .unwrap();
 
     println!("DAY 14\nSolution 1: {result1}\nSolution 2: {result2}");
 }
