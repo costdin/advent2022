@@ -44,7 +44,7 @@ pub fn day15() {
         .next()
         .unwrap();
 
-    println!("DAY 14\nSolution 1: {result1}\nSolution 2: {result2}");
+    println!("DAY 15\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
 fn intersection(
