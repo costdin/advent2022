@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Index,
-};
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 
@@ -11,6 +8,8 @@ fn to_id(s: &str) -> u16 {
         .fold(0, |acc, c| (acc << 8) + c)
 }
 
+// Maybe replace HashMap with Vec?
+// Compress IDs?
 pub fn day16() {
     let (mut press, all) = include_str!("../../day16.txt")
         .trim()
@@ -42,17 +41,17 @@ pub fn day16() {
         .map(|p| (*p, spf(*p, &press, &all)))
         .collect::<HashMap<_, _>>();
 
-    let (first_step, result1) = gaga(&press, 0, &map[&0], &map);
+    let (first_step, result1) = compute_max_pressure(&press, 0, &map[&0], &map);
     let xx = &map[&first_step];
     let yy = &map[&0][&first_step];
 
     press.retain(|v| v != &first_step);
-    let result2 = gaga2(&press, yy.0 + 1, 0, xx, &map[&0], &map) + (25 - yy.0) * yy.1;
+    let result2 = compute_max_pressure_pair(&press, yy.0 + 1, 0, xx, &map[&0], &map) + (25 - yy.0) * yy.1;
 
     println!("DAY 16\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
-fn gaga<'a>(
+fn compute_max_pressure<'a>(
     nodes: &'a Vec<u16>,
     distance: u32,
     next: &'a HashMap<u16, (u32, u32)>,
@@ -66,7 +65,7 @@ fn gaga<'a>(
 
         let new_distance = distance + next[&e].0 + 1;
         if new_distance < 30 {
-            let max = gaga(&n, new_distance, &map[&e], map).1 + (30 - new_distance) * next[&e].1;
+            let max = compute_max_pressure(&n, new_distance, &map[&e], map).1 + (30 - new_distance) * next[&e].1;
 
             if max > result.1 {
                 result = (e, result.1.max(max));
@@ -79,7 +78,7 @@ fn gaga<'a>(
     result
 }
 
-fn gaga2<'a>(
+fn compute_max_pressure_pair<'a>(
     nodes: &'a Vec<u16>,
     distance: u32,
     distance2: u32,
@@ -112,7 +111,7 @@ fn gaga2<'a>(
         };
 
         if new_distance < 26 && new_distance2 < 26 {
-            let max = gaga2(&n, new_distance, new_distance2, n1, n2, map);
+            let max = compute_max_pressure_pair(&n, new_distance, new_distance2, n1, n2, map);
 
             result = result.max(max + (26 - nd) * next[e].1);
         }
