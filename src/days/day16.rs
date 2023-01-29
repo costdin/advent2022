@@ -46,7 +46,8 @@ pub fn day16() {
     let yy = &map[&0][&first_step];
 
     press.retain(|v| v != &first_step);
-    let result2 = compute_max_pressure_pair(&press, yy.0 + 1, 0, xx, &map[&0], &map) + (25 - yy.0) * yy.1;
+    let result2 =
+        compute_max_pressure_pair(&press, yy.0 + 1, 0, xx, &map[&0], &map) + (25 - yy.0) * yy.1;
 
     println!("DAY 16\nSolution 1: {result1}\nSolution 2: {result2}");
 }
@@ -65,7 +66,8 @@ fn compute_max_pressure<'a>(
 
         let new_distance = distance + next[&e].0 + 1;
         if new_distance < 30 {
-            let max = compute_max_pressure(&n, new_distance, &map[&e], map).1 + (30 - new_distance) * next[&e].1;
+            let max = compute_max_pressure(&n, new_distance, &map[&e], map).1
+                + (30 - new_distance) * next[&e].1;
 
             if max > result.1 {
                 result = (e, result.1.max(max));
