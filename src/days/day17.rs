@@ -1,3 +1,4 @@
+// Does this work will all input?
 pub fn day17() {
     let figures = [
         vec![2, 3, 4, 5],
@@ -7,31 +8,31 @@ pub fn day17() {
         vec![2, 3, 9, 10],
     ];
     let bytes = include_bytes!("../../day17.txt");
-
-    let loop_len = figures.len() * bytes.len();
-    println!("{loop_len}");
-
     let figures_iter = LoopIterator::new(&figures);
     let moves = LoopIterator::new(bytes).map(|c| if c == b'<' { -1 } else { 1i32 });
 
-    let (result1, result2) : (usize, usize) = match figures_iter.enumerate().try_fold(
-        (moves, vec![false; 300000], 0, 0, 0),
-        |(mut moves, mut acc, top2022, mut top, mut move_count), (block_count, mut block)| {
+    let (result1, result2): (usize, usize) = match figures_iter.enumerate().try_fold(
+        (moves, vec![false; 300000], vec![], 0, 0, 0u16),
+        |(mut moves, mut acc, mut states, mut top, mut move_count, mut seq), (block_count, mut block)| {
             if block_count >= 2022 && move_count > bytes.len() {
-                let c1 = row_to_number(top - 1, &acc);
-                let vvvv = (1..)
-                    .take_while(|vv| *vv + 16 <= top)
-                    .map(|vv| top - vv)
-                    .map(|r| row_to_number(r, &acc))
-                    .enumerate()
-                    .filter(move |(_, v)| *v == c1)
-                    .collect::<Vec<_>>();
+                let (_, _, last_state) = states.last().unwrap();
 
-                if vvvv.len() > 2 {
-                    println!("{move_count}");
-                    println!("{vvvv:?}");
+                let cycle = states
+                    .iter()
+                    .filter(move |(_, bc, v)| {
+                        v == last_state && *bc > (bytes.len() / 4)
+                    })
+                    .collect::<Vec<&(usize, usize, u128)>>();
 
-                    return Err((top2022, top));
+                if cycle.len() > 1 {
+                    let step = cycle[1].1 - cycle[0].1;
+                    let cycle_growth = cycle[1].0 - cycle[0].0;
+                    let cycle_start = 1000000000000 - cycle[1].1;
+                    let cycle_count = cycle_start / step;
+                    let missing = cycle_start % step;
+                    let final_partial_growth = states[(cycle[0].1 + missing)].0 - states[cycle[0].1].0;
+
+                    return Err((states[2021].0, cycle_growth * cycle_count + cycle[1].0 + final_partial_growth - 1));
                 }
             }
 
@@ -41,8 +42,10 @@ pub fn day17() {
             }
 
             loop {
+                seq <<= 1;
+
                 let (bb, moved) = match moves.next().unwrap() {
-                    -1 => left(block, &acc),
+                    -1 => { seq |= 1; left(block, &acc)},
                     1 => right(block, &acc),
                     _ => unreachable!(),
                 };
@@ -52,43 +55,33 @@ pub fn day17() {
                 block = bb;
 
                 if !moved {
-                    block.iter().for_each(|ix| {
-                        top = top.max(1 + *ix / 7);
-                        acc[*ix] = true;
-                    });
+                    block.iter().for_each(|ix| acc[*ix] = true);
+                    top = top.max(1 + block.last().unwrap() / 7);
+                    let row_number = (row_to_number2(top, &acc) << 16) + (seq | (block_count % figures.len()) as u16) as u128;
+                    states.push((top, block_count, row_number));
+
                     break;
                 }
             }
 
-            Ok((moves, acc, if block_count >= 2022 { top2022 } else { top }, top, move_count))
+            Ok((moves, acc, states, top, move_count, seq))
         },
     ) {
         Ok(_) => unreachable!(),
-        Err((result1, result2)) => (result1, result2)
+        Err((result1, result2)) => (result1, result2),
     };
 
-    println!("DAY 17\nSolution 1: {result1:?}\nSolution 2: \n{result1:?}");
+    println!("DAY 17\nSolution 1: {result1:?}\nSolution 2: {result2:?}");
 }
 
-fn row_to_number(row: usize, table: &Vec<bool>) -> u128 {
-    (0..16).map(|i| row - i).fold(0, |acc, r| {
-        (acc << 8)
-            + (0..7)
-                .map(|i| r * 7 + i)
-                .fold(0, |acc, v| (acc << 1) + if table[v] { 1 } else { 0 })
+fn row_to_number2(top: usize, table: &Vec<bool>) -> u128 {
+    (0..7).fold(0, |acc, x| {
+        (acc << 16)
+            + (0..65536)
+                .take_while(|y| top >= *y && !table[(top - y) * 7 + x])
+                .last()
+                .unwrap() as u128
     })
-}
-
-fn print_row(row: usize, table: &Vec<bool>) {
-    (0..16).map(|i| row - i).for_each(|r| {
-        (0..7)
-            .map(|i| r * 7 + i)
-            .for_each(|v| print!("{}", if table[v] { '#' } else { '.' }));
-
-        println!("");
-    });
-
-    println!("");
 }
 
 fn left(mut block: Vec<usize>, map: &[bool]) -> (Vec<usize>, bool) {
