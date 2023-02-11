@@ -1,6 +1,6 @@
 mod days;
 use days::*;
-
+use std::time::Instant;
 fn main() -> Result<(), ()> {
     //    day1();
     //    day2();
@@ -19,7 +19,8 @@ fn main() -> Result<(), ()> {
     //    day15();
     //    day16();
     //    day17();
-    day18();
+    //    day18();
+    day19();
 
     Ok(())
 }

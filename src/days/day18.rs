@@ -13,8 +13,8 @@ pub fn day18() {
     let (result2, _, _) = diffuse(blocks, (x, y, z)).into_iter().fold(
         (
             -surface(x + 2, y + 2, z + 2), // +2 because we wrapped the droplet in a cuboid
-                                           // that is 1 cube larger that the droplet in all
-                                           // dimensions
+            // that is 1 cube larger that the droplet in all
+            // dimensions
             HashSet::new(),
             (i32::MIN, i32::MIN, i32::MIN),
         ),
