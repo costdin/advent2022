@@ -20,6 +20,6 @@ fn main() -> Result<(), ()> {
     //    day16();
     //    day17();
     day18();
-    
+
     Ok(())
 }

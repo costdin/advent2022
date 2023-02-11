@@ -13,15 +13,14 @@ pub fn day17() {
 
     let (result1, result2): (usize, usize) = match figures_iter.enumerate().try_fold(
         (moves, vec![false; 300000], vec![], 0, 0, 0u16),
-        |(mut moves, mut acc, mut states, mut top, mut move_count, mut seq), (block_count, mut block)| {
+        |(mut moves, mut acc, mut states, mut top, mut move_count, mut seq),
+         (block_count, mut block)| {
             if block_count >= 2022 && move_count > bytes.len() {
                 let (_, _, last_state) = states.last().unwrap();
 
                 let cycle = states
                     .iter()
-                    .filter(move |(_, bc, v)| {
-                        v == last_state && *bc > (bytes.len() / 4)
-                    })
+                    .filter(move |(_, bc, v)| v == last_state && *bc > (bytes.len() / 4))
                     .collect::<Vec<&(usize, usize, u128)>>();
 
                 if cycle.len() > 1 {
@@ -30,9 +29,13 @@ pub fn day17() {
                     let cycle_start = 1000000000000 - cycle[1].1;
                     let cycle_count = cycle_start / step;
                     let missing = cycle_start % step;
-                    let final_partial_growth = states[(cycle[0].1 + missing)].0 - states[cycle[0].1].0;
+                    let final_partial_growth =
+                        states[(cycle[0].1 + missing)].0 - states[cycle[0].1].0;
 
-                    return Err((states[2021].0, cycle_growth * cycle_count + cycle[1].0 + final_partial_growth - 1));
+                    return Err((
+                        states[2021].0,
+                        cycle_growth * cycle_count + cycle[1].0 + final_partial_growth - 1,
+                    ));
                 }
             }
 
@@ -45,7 +48,10 @@ pub fn day17() {
                 seq <<= 1;
 
                 let (bb, moved) = match moves.next().unwrap() {
-                    -1 => { seq |= 1; left(block, &acc)},
+                    -1 => {
+                        seq |= 1;
+                        left(block, &acc)
+                    }
                     1 => right(block, &acc),
                     _ => unreachable!(),
                 };
@@ -57,7 +63,8 @@ pub fn day17() {
                 if !moved {
                     block.iter().for_each(|ix| acc[*ix] = true);
                     top = top.max(1 + block.last().unwrap() / 7);
-                    let row_number = (row_to_number2(top, &acc) << 16) + (seq | (block_count % figures.len()) as u16) as u128;
+                    let row_number = (row_to_number2(top, &acc) << 16)
+                        + (seq | (block_count % figures.len()) as u16) as u128;
                     states.push((top, block_count, row_number));
 
                     break;
