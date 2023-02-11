@@ -2,24 +2,30 @@ use itertools::Itertools;
 use std::collections::HashSet;
 
 pub fn day18() {
-    let (result1, blocks, t) = include_str!("../../day18.txt")
+    let (result1, blocks, (x, y, z)) = include_str!("../../day18.txt")
         .trim()
         .lines()
         .flat_map(|l| l.split(',').map(|n| n.parse::<i32>().unwrap()))
         .tuples()
-        .map(|(x, y, z)| (x + 2, y + 2, z + 2))
+        .map(|(x, y, z)| (x + 1, y + 1, z + 1)) // translate droplet to avoid negatives in `fold` and `diffuse`
         .fold((0, HashSet::new(), (i32::MIN, i32::MIN, i32::MIN)), fold);
 
-    let (result2, _, _) = diffuse(blocks, t).into_iter().fold(
-        (-surface(t), HashSet::new(), (i32::MIN, i32::MIN, i32::MIN)),
+    let (result2, _, _) = diffuse(blocks, (x, y, z)).into_iter().fold(
+        (
+            -surface(x + 2, y + 2, z + 2), // +2 because we wrapped the droplet in a cuboid
+                                           // that is 1 cube larger that the droplet in all
+                                           // dimensions
+            HashSet::new(),
+            (i32::MIN, i32::MIN, i32::MIN),
+        ),
         fold,
     );
 
     println!("DAY 18\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
-fn surface((x, y, z): (i32, i32, i32)) -> i32 {
-    2 * ((x + 1) * (y + 1) + (x + 1) * (z + 1) + (y + 1) * (z + 1)) as i32
+fn surface(x: i32, y: i32, z: i32) -> i32 {
+    2 * ((x * y) + (x * z) + (y * z)) as i32
 }
 
 fn fold(
@@ -45,8 +51,8 @@ fn diffuse(
     blocks: HashSet<(i32, i32, i32)>,
     (bx, by, bz): (i32, i32, i32),
 ) -> HashSet<(i32, i32, i32)> {
-    let mut frontier = HashSet::from([(1, 1, 1)]);
-    let mut result = HashSet::from([(1, 1, 1)]);
+    let mut frontier = HashSet::from([(0, 0, 0)]);
+    let mut result = HashSet::from([(0, 0, 0)]);
 
     while frontier.len() > 0 {
         frontier = frontier
@@ -62,7 +68,7 @@ fn diffuse(
                 ]
             })
             .filter(|(x, y, z)| {
-                x > &0 && y > &0 && z > &0 && x <= &(bx + 1) && y <= &(by + 1) && z <= &(bz + 1)
+                x >= &0 && y >= &0 && z >= &0 && x <= &(bx + 1) && y <= &(by + 1) && z <= &(bz + 1)
             })
             .filter(|p| !blocks.contains(p))
             .filter(|p| !result.contains(p))
