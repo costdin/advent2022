@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use rayon::prelude::*;
+use std::collections::HashMap;
 
 pub fn day19() {
     let input = include_str!("../../day19.txt")
@@ -30,8 +30,12 @@ pub fn day19() {
                     (1 << 32, clay_ore_cost << 48),
                     (1 << 16, obs_ore_cost << 48 | obs_clay_cost << 32),
                     (1, geode_ore_cost << 48 | geode_obs_cost << 16),
-
-                    (((clay_ore_cost + obs_ore_cost + geode_ore_cost) << 48) | 0x0000_FFFF_FFFF_FFFF,  0),
+                    (
+                        ((clay_ore_cost + obs_ore_cost + geode_ore_cost) << 48)
+                            | 0x0000_FFFF_FFFF_FFFF,
+                        0,
+                    ),
+                    (ore_ore_cost.min(clay_ore_cost), 0)
                 ]
             },
         )
@@ -40,19 +44,19 @@ pub fn day19() {
 
     let result1 = input
         .par_iter()
-        .map(|(blueprint, ix)| ix * solve(blueprint, (1 << 48, 0), 24, 0, &mut HashMap::new()))
+        .map(|(blueprint, ix)| ix * solve(blueprint, (1 << 48, blueprint[5].0 << 48), 24 - blueprint[5].0 as i32, 0, &mut HashMap::new()))
         .sum::<i32>();
 
     let result2 = input
         .par_iter()
         .take(3)
-        .map(|(blueprint, _)| solve(blueprint, (1 << 48, 0), 32, 0, &mut HashMap::new()))
+        .map(|(blueprint, _)| solve(blueprint, (1 << 48, blueprint[5].0 << 48), 32 - blueprint[5].0 as i32, 0, &mut HashMap::new()))
         .reduce(|| 1, |acc, e| acc * e);
     println!("DAY 19\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
 fn solve(
-    blueprint: &[(u64, u64); 5],
+    blueprint: &[(u64, u64); 6],
     state: (u64, u64),
     count: i32,
     current_max: i32,
@@ -91,9 +95,18 @@ fn solve(
         let need_clay = state.0 & 0xFFFF_0000_0000 < blueprint[2].1 & 0xFFFF_0000_0000;
         let need_ore = state.0 < blueprint[4].0;
 
+        if need_obsidian
+            && !need_ore
+            && !need_clay
+            && !(state.1 >= blueprint[2].1
+                && state.1 & 0xFFFF_0000_0000 >= blueprint[2].1 & 0xFFFF_0000_0000)
+        {
+            println!("NO?");
+        }
+
         let mut r = current_max;
         if need_obsidian
-            && state.1 >= blueprint[2].1 
+            && state.1 >= blueprint[2].1
             && state.1 & 0xFFFF_0000_0000 >= blueprint[2].1 & 0xFFFF_0000_0000
         {
             r = r.max(solve(
@@ -105,8 +118,7 @@ fn solve(
             ));
         }
 
-        if need_clay && state.1 >= blueprint[1].1
-        {
+        if need_clay && state.1 >= blueprint[1].1 {
             r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[1].0, state.1 + state.0 - blueprint[1].1),
@@ -116,8 +128,7 @@ fn solve(
             ));
         }
 
-        if need_ore && state.1 >= blueprint[0].1
-        {
+        if need_ore && state.1 >= blueprint[0].1 {
             r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[0].0, state.1 + state.0 - blueprint[0].1),
