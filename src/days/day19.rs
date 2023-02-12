@@ -30,6 +30,8 @@ pub fn day19() {
                     (1 << 32, clay_ore_cost << 48),
                     (1 << 16, obs_ore_cost << 48 | obs_clay_cost << 32),
                     (1, geode_ore_cost << 48 | geode_obs_cost << 16),
+
+                    (((clay_ore_cost + obs_ore_cost + geode_ore_cost) << 48) | 0x0000_FFFF_FFFF_FFFF,  0),
                 ]
             },
         )
@@ -46,11 +48,11 @@ pub fn day19() {
         .take(3)
         .map(|(blueprint, _)| solve(blueprint, (1 << 48, 0), 32, 0, &mut HashMap::new()))
         .reduce(|| 1, |acc, e| acc * e);
-    println!("DAY 18\nSolution 1: {result1}\nSolution 2: {result2}");
+    println!("DAY 19\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
 fn solve(
-    blueprint: &[(u64, u64); 4],
+    blueprint: &[(u64, u64); 5],
     state: (u64, u64),
     count: i32,
     current_max: i32,
@@ -85,9 +87,14 @@ fn solve(
             );
         }
 
+        let need_obsidian = state.1 & 0xFFFF_0000 < blueprint[3].1 & 0xFFFF_0000;
+        let need_clay = state.0 & 0xFFFF_0000_0000 < blueprint[2].1 & 0xFFFF_0000_0000;
+        let need_ore = state.0 < blueprint[4].0;
+
         let mut r = current_max;
-        if state.1 >= blueprint[2].1
-            && (state.1 & 0xFFFF_0000_0000) >= (blueprint[2].1 & 0xFFFF_0000_0000)
+        if need_obsidian
+            && state.1 >= blueprint[2].1 
+            && state.1 & 0xFFFF_0000_0000 >= blueprint[2].1 & 0xFFFF_0000_0000
         {
             r = r.max(solve(
                 blueprint,
@@ -98,7 +105,8 @@ fn solve(
             ));
         }
 
-        if state.1 >= blueprint[1].1 {
+        if need_clay && state.1 >= blueprint[1].1
+        {
             r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[1].0, state.1 + state.0 - blueprint[1].1),
@@ -108,7 +116,8 @@ fn solve(
             ));
         }
 
-        if state.1 >= blueprint[0].1 {
+        if need_ore && state.1 >= blueprint[0].1
+        {
             r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[0].0, state.1 + state.0 - blueprint[0].1),
