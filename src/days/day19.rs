@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use rayon::prelude::*;
 
 pub fn day19() {
-    let result1 = include_str!("../../day19.txt")
+    let input = include_str!("../../day19.txt")
         .trim()
         .lines()
         .map(|l| l.split(' ').collect::<Vec<_>>())
@@ -33,55 +34,97 @@ pub fn day19() {
             },
         )
         .zip(1..)
-        .collect::<Vec<_>>()
-        .into_par_iter()
-        .map(|(blueprint, ix)| ix * xxxx(blueprint, (1 << 48, 0), 1))
+        .collect::<Vec<_>>();
+
+    let result1 = input
+        .par_iter()
+        .map(|(blueprint, ix)| ix * solve(blueprint, (1 << 48, 0), 24, 0, &mut HashMap::new()))
         .sum::<i32>();
 
-    println!("DAY 18\nSolution 1: {result1:?}\nSolution 2: {result1:?}");
+    let result2 = input
+        .par_iter()
+        .take(3)
+        .map(|(blueprint, _)| solve(blueprint, (1 << 48, 0), 32, 0, &mut HashMap::new()))
+        .reduce(|| 1, |acc, e| acc * e);
+    println!("DAY 18\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
-fn xxxx(blueprint: [(u64, u64); 4], state: (u64, u64), minute: i32) -> i32 {
-    if minute == 24 {
+fn solve(
+    blueprint: &[(u64, u64); 4],
+    state: (u64, u64),
+    count: i32,
+    current_max: i32,
+    seen: &mut HashMap<u128, i32>,
+) -> i32 {
+    let key = (state.0 as u128) << 64 | state.1 as u128;
+
+    match seen.get_mut(&key) {
+        Some(i) if *i >= count => return 0,
+        Some(i) => *i = count,
+        None => {
+            seen.insert(key, count);
+        }
+    };
+
+    if count == 1 {
         ((state.0 + state.1) & 0xFFFF) as i32
     } else {
-        let mut r = 0;
+        let max_achievable =
+            (state.1 & 0xFFFF) as i32 + (state.0 & 0xFFFF) as i32 * count + count * (count + 1) / 2;
+        if current_max > max_achievable {
+            return 0;
+        }
 
         if state.1 >= blueprint[3].1 && (state.1 & 0xFFFF_0000) >= (blueprint[3].1 & 0xFFFF_0000) {
-            return xxxx(
+            return solve(
                 blueprint,
                 (state.0 + blueprint[3].0, state.1 + state.0 - blueprint[3].1),
-                minute + 1,
+                count - 1,
+                current_max,
+                seen,
             );
         }
 
+        let mut r = current_max;
         if state.1 >= blueprint[2].1
             && (state.1 & 0xFFFF_0000_0000) >= (blueprint[2].1 & 0xFFFF_0000_0000)
         {
-            r = r.max(xxxx(
+            r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[2].0, state.1 + state.0 - blueprint[2].1),
-                minute + 1,
+                count - 1,
+                r,
+                seen,
             ));
         }
 
         if state.1 >= blueprint[1].1 {
-            r = r.max(xxxx(
+            r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[1].0, state.1 + state.0 - blueprint[1].1),
-                minute + 1,
+                count - 1,
+                r,
+                seen,
             ));
         }
 
         if state.1 >= blueprint[0].1 {
-            r = r.max(xxxx(
+            r = r.max(solve(
                 blueprint,
                 (state.0 + blueprint[0].0, state.1 + state.0 - blueprint[0].1),
-                minute + 1,
+                count - 1,
+                r,
+                seen,
             ));
         }
 
-        r = r.max(xxxx(blueprint, (state.0, state.1 + state.0), minute + 1));
+        r = r.max(solve(
+            blueprint,
+            (state.0, state.1 + state.0),
+            count - 1,
+            r,
+            seen,
+        ));
 
         r
     }

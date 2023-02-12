@@ -1,6 +1,6 @@
 mod days;
 use days::*;
-use std::time::Instant;
+use std::time::{Instant};
 fn main() -> Result<(), ()> {
     //    day1();
     //    day2();
@@ -20,7 +20,10 @@ fn main() -> Result<(), ()> {
     //    day16();
     //    day17();
     //    day18();
+
+    let s1 = Instant::now();
     day19();
+    println!("The time is probably {}ms", s1.elapsed().as_millis());
 
     Ok(())
 }
