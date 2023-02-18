@@ -35,7 +35,7 @@ pub fn day19() {
                             | 0x0000_FFFF_FFFF_FFFF,
                         0,
                     ),
-                    (ore_ore_cost.min(clay_ore_cost), 0)
+                    (ore_ore_cost.min(clay_ore_cost), 0),
                 ]
             },
         )
@@ -44,17 +44,35 @@ pub fn day19() {
 
     let result1 = input
         .par_iter()
-        .map(|(blueprint, ix)| ix * solve(blueprint, (1 << 48, blueprint[5].0 << 48), 24 - blueprint[5].0 as i32, 0, &mut HashMap::new()))
+        .map(|(blueprint, ix)| {
+            ix * solve(
+                blueprint,
+                (1 << 48, blueprint[5].0 << 48),
+                24 - blueprint[5].0 as i32,
+                0,
+                &mut HashMap::new(),
+            )
+        })
         .sum::<i32>();
 
     let result2 = input
         .par_iter()
         .take(3)
-        .map(|(blueprint, _)| solve(blueprint, (1 << 48, blueprint[5].0 << 48), 32 - blueprint[5].0 as i32, 0, &mut HashMap::new()))
+        .map(|(blueprint, _)| {
+            solve(
+                blueprint,
+                (1 << 48, blueprint[5].0 << 48),
+                32 - blueprint[5].0 as i32,
+                0,
+                &mut HashMap::new(),
+            )
+        })
         .reduce(|| 1, |acc, e| acc * e);
     println!("DAY 19\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
+// we can optimise this further.
+// skip empty minutes (calculate empty cycle necessary to build next robot)
 fn solve(
     blueprint: &[(u64, u64); 6],
     state: (u64, u64),
