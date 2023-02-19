@@ -31,6 +31,7 @@ pub fn day20() {
     println!("DAY 20\nSolution 1: {result1:?}\nSolution 2: {result2:?}");
 }
 
+// this could be optimized if we kept links to previous and next number
 fn mix(mut list: Vec<(usize, i64)>) -> Vec<(usize, i64)> {
     let mut i = 0;
     let mut curr = 0;
