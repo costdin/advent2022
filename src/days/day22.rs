@@ -3,10 +3,10 @@ use itertools::Itertools;
 type NextFn = Box<
     dyn Fn(
         &Vec<Vec<u8>>,
-        usize,
-        usize,
+        (usize, usize),
         Direction,
-    ) -> Result<((usize, usize), Direction), ((usize, usize), Direction)>,
+        usize,
+    ) -> ((usize, usize), Direction),
 >;
 
 pub fn day22() {
@@ -46,11 +46,7 @@ pub fn day22() {
                 .for_each(|(a, n)| *a = match (&instruction, a.1) {
                     (Instruction::RotateLeft, d) => (a.0, d.rotate_left()),
                     (Instruction::RotateRight, d) => (a.0, d.rotate_right()),
-                    (Instruction::Move(c), _) => {
-                        match (0..*c).try_fold(*a, |((x, y), d), _| n(&map, x, y, d)) {
-                            Err(r) | Ok(r) => r,
-                        }
-                    }
+                    (Instruction::Move(c), _) => n(&map, a.0, a.1, *c),
                 });
             
             acc
@@ -66,66 +62,74 @@ fn to_score(((x, y), direction): ((usize, usize), Direction)) -> usize {
 
 fn next(
     map: &Vec<Vec<u8>>,
-    x: usize,
-    y: usize,
+    (mut x, mut y): (usize, usize),
     direction: Direction,
-) -> Result<((usize, usize), Direction), ((usize, usize), Direction)> {
+    count: usize,
+) -> ((usize, usize), Direction) {
     let (dx, dy) = direction.to_deltas();
-    let (mut nx, mut ny) = (x, y);
-    loop {
-        (nx, ny) = if dx != 0 {
+    for _ in 0..count {
+        let (nx, ny) = if dx != 0 {
             (
-                (nx as isize + dx).rem_euclid(map.len() as isize) as usize,
-                ny,
+                (x as isize + dx).rem_euclid(map.len() as isize) as usize,
+                y,
             )
         } else {
             (
-                nx,
-                (ny as isize + dy).rem_euclid(map[nx].len() as isize) as usize,
+                x,
+                (y as isize + dy).rem_euclid(map[x].len() as isize) as usize,
             )
         };
 
         if map[nx].len() > ny {
             match map[nx][ny] {
-                b'#' => return Err(((x, y), direction)),
-                b'.' => return Ok(((nx, ny), direction)),
+                b'#' => return ((x, y), direction),
                 _ => {}
             }
         }
+
+        (x, y) = (nx, ny);
     }
+
+    ((x, y), direction)
 }
 
 fn next_cube(
     map: &Vec<Vec<u8>>,
-    x: usize,
-    y: usize,
-    direction: Direction,
-) -> Result<((usize, usize), Direction), ((usize, usize), Direction)> {
-    let (dx, dy) = direction.to_deltas();
+    (mut x, mut y): (usize, usize),
+    mut direction: Direction,
+    count: usize,
+) -> ((usize, usize), Direction) {
+    for _ in 0..count {
+        let (dx, dy) = direction.to_deltas();
+        
+        let (nx, ny, nd) = match (x as isize + dx, y as isize + dy, &direction) {
+            (-1, y, Direction::Up) if y >= 50 && y < 100 => (y + 100, 0, Direction::Right), // 1 -> 6
+            (x, 49, Direction::Left) if x >= 0 && x < 50 => (149 - x, 0, Direction::Right), // 1 -> 5
+            (-1, y, Direction::Up) if y >= 100 && y < 150 => (199, y - 100, Direction::Up), // 2 -> 6
+            (50, y, Direction::Down) if y >= 100 && y < 150 => (y - 50, 99, Direction::Left), // 2 -> 3
+            (x, 150, Direction::Right) if x >= 0 && x < 50 => (149 - x, 99, Direction::Left), // 2 -> 4
+            (x, 49, Direction::Left) if x >= 50 && x < 100 => (100, x - 50, Direction::Down), // 3 -> 5
+            (x, 100, Direction::Right) if x >= 50 && x < 100 => (49, x + 50, Direction::Up), // 3 -> 2
+            (x, 100, Direction::Right) if x >= 100 && x < 150 => (149 - x, 149, Direction::Left), // 4 -> 2
+            (150, y, Direction::Down) if y >= 50 && y < 100 => (100 + y, 49, Direction::Left), // 4 -> 6
+            (x, -1, Direction::Left) if x >= 100 && x < 150 => (149 - x, 50, Direction::Right), // 5 -> 1
+            (99, y, Direction::Up) if y >= 0 && y < 50 => (y + 50, 50, Direction::Right), // 5 -> 3
+            (x, -1, Direction::Left) if x >= 150 && x < 200 => (0, x - 100, Direction::Down), // 6 -> 1
+            (200, y, Direction::Down) if y >= 0 && y < 50 => (0, y + 100, Direction::Down), // 6 -> 2
+            (x, 50, Direction::Right) if x >= 150 && x < 200 => (149, x - 100, Direction::Up), // 6 -> 4
+            (x, y, d) => (x, y, *d),
+        };
 
-    let (nx, ny, nd) = match (x as isize + dx, y as isize + dy, &direction) {
-        (-1, y, Direction::Up) if y >= 50 && y < 100 => (y + 100, 0, Direction::Right), // 1 -> 6
-        (x, 49, Direction::Left) if x >= 0 && x < 50 => (149 - x, 0, Direction::Right), // 1 -> 5
-        (-1, y, Direction::Up) if y >= 100 && y < 150 => (199, y - 100, Direction::Up), // 2 -> 6
-        (50, y, Direction::Down) if y >= 100 && y < 150 => (y - 50, 99, Direction::Left), // 2 -> 3
-        (x, 150, Direction::Right) if x >= 0 && x < 50 => (149 - x, 99, Direction::Left), // 2 -> 4
-        (x, 49, Direction::Left) if x >= 50 && x < 100 => (100, x - 50, Direction::Down), // 3 -> 5
-        (x, 100, Direction::Right) if x >= 50 && x < 100 => (49, x + 50, Direction::Up), // 3 -> 2
-        (x, 100, Direction::Right) if x >= 100 && x < 150 => (149 - x, 149, Direction::Left), // 4 -> 2
-        (150, y, Direction::Down) if y >= 50 && y < 100 => (100 + y, 49, Direction::Left), // 4 -> 6
-        (x, -1, Direction::Left) if x >= 100 && x < 150 => (149 - x, 50, Direction::Right), // 5 -> 1
-        (99, y, Direction::Up) if y >= 0 && y < 50 => (y + 50, 50, Direction::Right), // 5 -> 3
-        (x, -1, Direction::Left) if x >= 150 && x < 200 => (0, x - 100, Direction::Down), // 6 -> 1
-        (200, y, Direction::Down) if y >= 0 && y < 50 => (0, y + 100, Direction::Down), // 6 -> 2
-        (x, 50, Direction::Right) if x >= 150 && x < 200 => (149, x - 100, Direction::Up), // 6 -> 4
-        (x, y, d) => (x, y, *d),
-    };
+        match map[nx as usize][ny as usize] {
+            b'#' => return ((x as usize, y as usize), direction),
+            b'.' => { },
+            _ => unreachable!(),
+        }
 
-    match map[nx as usize][ny as usize] {
-        b'#' => Err(((x as usize, y as usize), direction)),
-        b'.' => Ok(((nx as usize, ny as usize), nd)),
-        _ => unreachable!(),
+        (x, y, direction) = (nx as usize, ny as usize, nd);
     }
+
+    ((x as usize, y as usize), direction)
 }
 
 enum Instruction {
