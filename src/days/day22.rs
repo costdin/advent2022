@@ -1,6 +1,13 @@
 use itertools::Itertools;
 
-type NextFn = Box<dyn Fn(&Vec<Vec<u8>>, usize, usize, Direction) -> ((usize, usize), Direction)>;
+type NextFn = Box<
+    dyn Fn(
+        &Vec<Vec<u8>>,
+        usize,
+        usize,
+        Direction,
+    ) -> Result<((usize, usize), Direction), ((usize, usize), Direction)>,
+>;
 
 pub fn day22() {
     let (map, instructions) = include_bytes!("../../day22.txt")
@@ -21,62 +28,36 @@ pub fn day22() {
             },
         );
 
-    let fns: [NextFn; 2] = [
-        Box::new(|map, x, y, direction| next(map, x, y, direction)),
-        Box::new(|map, x, y, direction| next_cube(map, x, y, direction)),
-    ];
-
-    let inst = instructions.collect::<Vec<_>>();
-
-    let result1 = to_score(inst.iter().fold(
-        (
-            (0usize, map[0].iter().position(|p| p != &b' ').unwrap()),
-            Direction::Right,
-        ),
-        |((x, y), direction), instruction| match (instruction, direction) {
-            (Instruction::RotateLeft, d) => ((x, y), d.rotate_left()),
-            (Instruction::RotateRight, d) => ((x, y), d.rotate_right()),
-            (Instruction::Move(c), d) => {
-                match (0..*c).try_fold(((x, y), d), |((x, y), d), _| {
-                    let ((nx, ny), d) = next(&map, x, y, d);
-
-                    if map[nx][ny] == b'#' {
-                        Err(((x, y), d))
-                    } else {
-                        Ok(((nx, ny), d))
+    let next_functions: [NextFn; 2] = [Box::new(next), Box::new(next_cube)];
+    let result = instructions.fold(
+        [
+            (
+                (0usize, map[0].iter().position(|p| p != &b' ').unwrap()),
+                Direction::Right,
+            ),
+            (
+                (0usize, map[0].iter().position(|p| p != &b' ').unwrap()),
+                Direction::Right,
+            ),
+        ],
+        |mut acc, instruction| {
+            acc.iter_mut()
+                .zip(next_functions.iter())
+                .for_each(|(a, n)| *a = match (&instruction, a.1) {
+                    (Instruction::RotateLeft, d) => (a.0, d.rotate_left()),
+                    (Instruction::RotateRight, d) => (a.0, d.rotate_right()),
+                    (Instruction::Move(c), _) => {
+                        match (0..*c).try_fold(*a, |((x, y), d), _| n(&map, x, y, d)) {
+                            Err(r) | Ok(r) => r,
+                        }
                     }
-                }) {
-                    Err((r, d)) | Ok((r, d)) => (r, d),
-                }
-            }
+                });
+            
+            acc
         },
-    ));
+    ).map(to_score);
 
-    let result2 = to_score(inst.iter().fold(
-        (
-            (0usize, map[0].iter().position(|p| p != &b' ').unwrap()),
-            Direction::Right,
-        ),
-        |((x, y), direction), instruction| match (instruction, direction) {
-            (Instruction::RotateLeft, d) => ((x, y), d.rotate_left()),
-            (Instruction::RotateRight, d) => ((x, y), d.rotate_right()),
-            (Instruction::Move(c), d) => {
-                match (0..*c).try_fold(((x, y), d), |((x, y), d), _| {
-                    let ((nx, ny), d) = next_cube(&map, x, y, d);
-
-                    if map[nx][ny] == b'#' {
-                        Err(((x, y), d))
-                    } else {
-                        Ok(((nx, ny), d))
-                    }
-                }) {
-                    Err((r, d)) | Ok((r, d)) => (r, d),
-                }
-            }
-        },
-    ));
-
-    println!("DAY 21\nSolution 1: {result1:?} \nSolution 2: {result2:?}\n");
+    println!("DAY 21\nSolution 1: {} \nSolution 2: {}\n", result[0], result[1]);
 }
 
 fn to_score(((x, y), direction): ((usize, usize), Direction)) -> usize {
@@ -88,7 +69,7 @@ fn next(
     x: usize,
     y: usize,
     direction: Direction,
-) -> ((usize, usize), Direction) {
+) -> Result<((usize, usize), Direction), ((usize, usize), Direction)> {
     let (dx, dy) = direction.to_deltas();
     let (mut nx, mut ny) = (x, y);
     loop {
@@ -104,8 +85,12 @@ fn next(
             )
         };
 
-        if map[nx].len() > ny && (map[nx][ny] == b'#' || map[nx][ny] == b'.') {
-            return ((nx, ny), direction);
+        if map[nx].len() > ny {
+            match map[nx][ny] {
+                b'#' => return Err(((x, y), direction)),
+                b'.' => return Ok(((nx, ny), direction)),
+                _ => {}
+            }
         }
     }
 }
@@ -115,7 +100,7 @@ fn next_cube(
     x: usize,
     y: usize,
     direction: Direction,
-) -> ((usize, usize), Direction) {
+) -> Result<((usize, usize), Direction), ((usize, usize), Direction)> {
     let (dx, dy) = direction.to_deltas();
 
     let (nx, ny, nd) = match (x as isize + dx, y as isize + dy, &direction) {
@@ -137,20 +122,19 @@ fn next_cube(
     };
 
     match map[nx as usize][ny as usize] {
-        b'#' => ((nx as usize, ny as usize), direction),
-        b'.' => ((nx as usize, ny as usize), nd),
+        b'#' => Err(((x as usize, y as usize), direction)),
+        b'.' => Ok(((nx as usize, ny as usize), nd)),
         _ => unreachable!(),
     }
 }
 
-#[derive(Debug)]
 enum Instruction {
     Move(usize),
     RotateLeft,
     RotateRight,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 enum Direction {
     Left,
     Right,

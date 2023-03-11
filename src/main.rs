@@ -27,7 +27,7 @@ fn main() -> Result<(), ()> {
 
     let s1 = Instant::now();
     day22();
-    println!("The time is probably {}ms", s1.elapsed().as_millis());
+    println!("The time is probably {}µs", s1.elapsed().as_micros());
 
     Ok(())
 }
