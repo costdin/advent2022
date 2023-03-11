@@ -49,7 +49,6 @@ fn to_computable(hashmap: &HashMap<&str, Monkey>, name: &str) -> Computable {
     }
 }
 
-#[derive(Debug)]
 enum Computable {
     Computed(i128),
     Unknown,
