@@ -24,9 +24,10 @@ fn main() -> Result<(), ()> {
     //    day19();
     //    day20();
     //    day21();
-
+    //    day22();
+    //    day23();
     let s1 = Instant::now();
-    day22();
+    day24();
     println!("The time is probably {}µs", s1.elapsed().as_micros());
 
     Ok(())

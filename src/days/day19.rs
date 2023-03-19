@@ -72,7 +72,7 @@ pub fn day19() {
 }
 
 // we can optimise this further.
-// skip empty minutes (calculate empty cycle necessary to build next robot)
+// skip empty minutes (calculate empty cycles necessary to build next robot)
 fn solve(
     blueprint: &[(u64, u64); 6],
     state: (u64, u64),
