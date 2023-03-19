@@ -61,9 +61,7 @@ pub fn day24() {
         _ => unreachable!(),
     };
 
-    println!(
-        "DAY 24\nSolution 1: {result1}\nSolution 2: {result2}"
-    );
+    println!("DAY 24\nSolution 1: {result1}\nSolution 2: {result2}");
 }
 
 fn valid_moves(
@@ -80,14 +78,15 @@ fn valid_moves(
     ]
     .iter()
     .map(move |(dr, dc)| ((r + dr) % ROW_COUNT, (c + dc) % COL_COUNT))
-    .filter(|&(nr, nc)| (nr, nc) == (0, 0) || (nr, nc) == (ROW_COUNT - 1, COL_COUNT - 1) || (nr > 0 && nr < (ROW_COUNT - 1)&& nc < COL_COUNT))
-    .filter(move |&(nr, nc)| (nr.max(r) - nr.min(r)) <= 1 && (nc.max(c) - nc.min(c)) <= 1)
-    .filter(
-        move |&(nr, nc)| {
-            !map[0][nr][(nc + turn) % COL_COUNT] // Left
+    .filter(move |&(nr, nc)| {
+        ((nr, nc) == (0, 0)
+                || (nr, nc) == (ROW_COUNT - 1, COL_COUNT - 1)
+                || (nr > 0 && nr < (ROW_COUNT - 1)&& nc < COL_COUNT)) // boundaries
+            && (nr.max(r) - nr.min(r)) <= 1 && (nc.max(c) - nc.min(c)) <= 1 // adjacency
+            && !map[0][nr][(nc + turn) % COL_COUNT] // Left
             && !map[1][nr][(nc + (COL_COUNT - 1) * turn) % COL_COUNT] // Right
             && !map[2][(nr + ROTATING_ROWS - 1 + turn) % ROTATING_ROWS + 1][nc] // Up
             && !map[3][(nr + (ROTATING_ROWS - 1) * (turn + 1)) % ROTATING_ROWS + 1][nc]
-        }, // Down
-    )
+        // Down
+    })
 }
