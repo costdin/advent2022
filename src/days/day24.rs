@@ -27,21 +27,45 @@ pub fn day24() {
             acc
         });
 
-    let result1 = match (0..).try_fold(HashSet::from([(0, 0)]), |positions, turn| {
-        if positions.contains(&(ROW_COUNT - 1, COL_COUNT - 1)) {
-            Err(turn + 1)
-        } else {
-            Ok(positions
-                .into_iter()
-                .flat_map(|p| valid_moves(p, turn + 1, &map))
-                .collect())
-        }
-    }) {
-        Err(r) => r,
+    let (result1, result2) = match (0..).try_fold(
+        (
+            HashSet::from([(0, 0)]),
+            vec![
+                (ROW_COUNT - 1, COL_COUNT - 1),
+                (1, 0),
+                (ROW_COUNT - 1, COL_COUNT - 1),
+            ],
+            vec![],
+        ),
+        |(positions, mut destination, mut results), turn| {
+            if destination.is_empty() {
+                Err(results)
+            } else if positions.contains(&destination.last().unwrap()) {
+                results.push(turn + 1);
+                Ok((
+                    HashSet::from([destination.pop().unwrap()]),
+                    destination,
+                    results,
+                ))
+            } else {
+                Ok((
+                    positions
+                        .into_iter()
+                        .flat_map(|p| valid_moves(p, turn + 1, &map))
+                        .collect(),
+                    destination,
+                    results,
+                ))
+            }
+        },
+    ) {
+        Err(r) => (r[0], r[2]),
         _ => unreachable!(),
     };
 
-    println!("DAY 24\nSolution 1: {}\nSolution 2: {}", result1, map.len());
+    println!(
+        "DAY 24\nSolution 1: {result1}\nSolution 2: {result2}"
+    );
 }
 
 fn valid_moves(
