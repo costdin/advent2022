@@ -1,12 +1,10 @@
 use std::collections::HashSet;
 
-const ROW_COUNT: usize = 26;
+const ROW_COUNT: usize = 27;
 const COL_COUNT: usize = 120;
-//const ROW_COUNT: usize = 5;
+//const ROW_COUNT: usize = 6;
 //const COL_COUNT: usize = 6;
-const ROTATING_ROWS: usize = ROW_COUNT - 1;
-
-// 272 too low
+const ROTATING_ROWS: usize = ROW_COUNT - 2;
 
 pub fn day24() {
     let map = include_str!("../../day24.txt")
@@ -32,7 +30,7 @@ pub fn day24() {
             HashSet::from([(0, 0)]),
             vec![
                 (ROW_COUNT - 1, COL_COUNT - 1),
-                (1, 0),
+                (0, 0),
                 (ROW_COUNT - 1, COL_COUNT - 1),
             ],
             vec![],
@@ -41,7 +39,7 @@ pub fn day24() {
             if destination.is_empty() {
                 Err(results)
             } else if positions.contains(&destination.last().unwrap()) {
-                results.push(turn + 1);
+                results.push(turn);
                 Ok((
                     HashSet::from([destination.pop().unwrap()]),
                     destination,
@@ -82,7 +80,7 @@ fn valid_moves(
     ]
     .iter()
     .map(move |(dr, dc)| ((r + dr) % ROW_COUNT, (c + dc) % COL_COUNT))
-    .filter(|&(nr, nc)| (nr, nc) == (0, 0) || (nr > 0 && nr < ROW_COUNT && nc < COL_COUNT))
+    .filter(|&(nr, nc)| (nr, nc) == (0, 0) || (nr, nc) == (ROW_COUNT - 1, COL_COUNT - 1) || (nr > 0 && nr < (ROW_COUNT - 1)&& nc < COL_COUNT))
     .filter(move |&(nr, nc)| (nr.max(r) - nr.min(r)) <= 1 && (nc.max(c) - nc.min(c)) <= 1)
     .filter(
         move |&(nr, nc)| {
