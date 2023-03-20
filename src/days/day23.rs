@@ -1,16 +1,4 @@
-use crossterm::terminal::Clear;
-pub use crossterm::{
-    cursor,
-    event::{self, Event, KeyCode, KeyEvent},
-    execute, queue,
-    style::{style, Color, PrintStyledContent, SetForegroundColor, Stylize},
-    terminal::{self, ClearType},
-    Command, ExecutableCommand, QueueableCommand,
-};
-use std::{
-    collections::{HashMap, HashSet},
-    io::{stdout, Write},
-};
+use std::collections::{HashMap, HashSet};
 
 const COL_COUNT: usize = 74;
 
@@ -77,19 +65,6 @@ pub fn day23() {
         "DAY 23\nSolution 1: {} \nSolution 2: {}\n",
         result1, result2
     );
-}
-
-fn sprint(map: &HashSet<(i16, i16)>) {
-    let mut console = stdout();
-    console.queue(Clear(ClearType::All));
-
-    let head = style("*").with(Color::Red);
-
-    for (x, y) in map.iter().map(|(x, y)| (x + 10, y + 10)) {
-        console.queue(cursor::MoveTo(y as u16, x as u16));
-        console.queue(PrintStyledContent(head));
-    }
-    console.flush();
 }
 
 fn result(map: &HashSet<(i16, i16)>) -> usize {

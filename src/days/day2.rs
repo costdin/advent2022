@@ -1,8 +1,7 @@
-use super::get_input_lines;
-
 pub fn day2() {
-    let (result1, result2) = get_input_lines(2)
-        .iter()
+    let (result1, result2) = include_str!("../../day2.txt")
+        .trim()
+        .lines()
         .map(|l| l.chars().collect::<Vec<_>>())
         .map(|l| (l[0], l[2]))
         .map(|l| (Shape::parse(l.0), Shape::parse(l.1), GameResult::parse(l.1)))
